@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+
+# Archivos temporales de AMPL
+*.mod
+*.dat
+*.log
+
+# Entornos virtuales
+venv/
+env/
+.env
