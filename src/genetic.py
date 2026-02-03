@@ -3,7 +3,7 @@ import multiprocessing
 import os
 from .solver import initWorker, solveWorker
 
-def createBinaryChromosome(numCds):
+def createChromosome(numCds):
     chrom = [random.choice([0, 1]) for _ in range(numCds)]
     if sum(chrom) == 0:
         chrom[random.randint(0, numCds - 1)] = 1
@@ -15,13 +15,13 @@ def tournamentSelection(population, fitnesses, k=2):
     bestLocalIndex = selectedIndices[selectedFitnesses.index(min(selectedFitnesses))]
     return population[bestLocalIndex]
 
-def crossoverBinary(parent1, parent2):
+def crossover(parent1, parent2):
     point = random.randint(1, len(parent1) - 1)
     child1 = parent1[:point] + parent2[point:]
     child2 = parent2[:point] + parent1[point:]
     return child1, child2
 
-def mutateBinary(chromosome, mutationRate=0.05):
+def mutate(chromosome, mutationRate=0.05):
     newChrom = chromosome[:]
     for i in range(len(newChrom)):
         if random.random() < mutationRate:
@@ -30,7 +30,7 @@ def mutateBinary(chromosome, mutationRate=0.05):
          newChrom[random.randint(0, len(newChrom) - 1)] = 1
     return newChrom
 
-def geneticAlgorithmParallel(modelCode, dataStr, numCds, popSize=20, generations=10, mutationRate=0.1, elitism=True, nJobs=2, licenseUuid=""):
+def geneticAlgorithm(modelCode, dataStr, numCds, popSize=20, generations=10, mutationRate=0.1, elitism=True, nJobs=2, licenseUuid=""):
     
     # Escribir archivos temporales para los workers
     tempModelName = "temp_model.mod"
@@ -84,7 +84,7 @@ def geneticAlgorithmParallel(modelCode, dataStr, numCds, popSize=20, generations
 
         # --- GA LOOP ---
         print("Generando población inicial...")
-        population = [createBinaryChromosome(numCds) for _ in range(popSize)]
+        population = [createChromosome(numCds) for _ in range(popSize)]
         
         fitnesses, times = evaluatePopulation(population)
         fitnessTimeList.extend(times)
@@ -103,9 +103,9 @@ def geneticAlgorithmParallel(modelCode, dataStr, numCds, popSize=20, generations
             while len(newPopulation) < popSize:
                 p1 = tournamentSelection(population, fitnesses)
                 p2 = tournamentSelection(population, fitnesses)
-                c1, c2 = crossoverBinary(p1, p2)
-                c1 = mutateBinary(c1, mutationRate)
-                c2 = mutateBinary(c2, mutationRate)
+                c1, c2 = crossover(p1, p2)
+                c1 = mutate(c1, mutationRate)
+                c2 = mutate(c2, mutationRate)
                 newPopulation.extend([c1, c2])
             
             population = newPopulation[:popSize]

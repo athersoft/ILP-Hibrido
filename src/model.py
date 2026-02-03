@@ -41,6 +41,7 @@ s.t. QuadDemand{i in I}: QD[i] * QD[i] >= D[i];
 s.t. QuadVar{i in I}: QU[i] * QU[i] >= U[i];
 """
 
+#---------------------------------Clases y funciones para instancias aleatorias----------------------------------
 class Cd:
     def __init__(self, id, capacity, fixedCost, reorderCost, holdingCost, leadTime, replenishmentCost):
         self.id = id
