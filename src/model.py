@@ -1,37 +1,34 @@
 import numpy as np
 import random
 
-# Definición del modelo AMPL en string raw
 AMPL_MODEL_CODE = r"""
-set I;   # Centros de distribución
-set J;   # Clientes
+param F{i in I}; #Costo fijo de abrir CD i
+param Cap{i in I}; #Capacidad máxima CD
+param d{j in J}; #Demanda promedio cliente j
+param u{j in J}; #Varianza cliente
+param RC{i in I}; #Costo de reabastecimiento
+param TC{i in I,j in J}; #Costo de transporte de i a j
+param OC{i in I}; #Costo de ordenar en CD i
+param HC{i in I}; #Costo de tenencia de inventario
+param LT{i in I}; #Tiempo de espera de orden a la planta
+param K; #Factor de nivel de servicio
+param TH; #Horizonte de tiempo
 
-param F{i in I};
-param Cap{i in I};
-param d{j in J};
-param u{j in J};
-param RC{i in I};
-param TC{i in I,j in J};
-param OC{i in I};
-param HC{i in I};
-param LT{i in I};
-param K;
-param TH;
-
-var Z{i in I} binary;
-var Y{i in I,j in J} binary;
-var D{i in I} >= 0;
-var U{i in I} >= 0;
+var Z{i in I} binary; #Abrir o no CD i
+var Y{i in I,j in J} binary; #Asignación de i a j
+var D{i in I} >= 0; #Demanda asignada
+var U{i in I} >= 0; #Varianza asignada
 
 var QD{i in I} >= 0;
 var QU{i in I} >= 0;
 
 minimize TotalCost:
-    sum{i in I} F[i] * Z[i]
-  + sum{i in I, j in J} TH * (RC[i] + TC[i,j]) * d[j] * Y[i,j]
-  + sum{i in I} TH * sqrt(2 * HC[i] * OC[i]) * QD[i]
-  + sum{i in I} TH * HC[i] * K * sqrt(LT[i]) * QU[i];
+    sum{i in I} F[i] * Z[i] #Costos fijos
+  + sum{i in I, j in J} TH * (RC[i] + TC[i,j]) * d[j] * Y[i,j] #Costos de transporte
+  + sum{i in I} TH * sqrt(2 * HC[i] * OC[i]) * QD[i] #Costos de inventario cíclico
+  + sum{i in I} TH * HC[i] * K * sqrt(LT[i]) * QU[i]; #Costos de inventario de seguridad
 
+#Restricciónes y definiciones
 s.t. Assign{j in J}: sum{i in I} Y[i,j] = 1;
 s.t. Capacity{i in I}: sum{j in J} d[j]*Y[i,j] <= Cap[i]*Z[i];
 s.t. DemandDef{i in I}: D[i] = sum{j in J} d[j]*Y[i,j];

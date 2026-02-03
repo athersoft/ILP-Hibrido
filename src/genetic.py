@@ -15,13 +15,13 @@ def tournamentSelection(population, fitnesses, k=2):
     bestLocalIndex = selectedIndices[selectedFitnesses.index(min(selectedFitnesses))]
     return population[bestLocalIndex]
 
-def crossover(parent1, parent2):
+def crossover(parent1, parent2): #El crossover más básico
     point = random.randint(1, len(parent1) - 1)
     child1 = parent1[:point] + parent2[point:]
     child2 = parent2[:point] + parent1[point:]
     return child1, child2
 
-def mutate(chromosome, mutationRate=0.05):
+def mutate(chromosome, mutationRate=0.05): #Mutación básica
     newChrom = chromosome[:]
     for i in range(len(newChrom)):
         if random.random() < mutationRate:
