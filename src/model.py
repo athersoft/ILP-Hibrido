@@ -2,6 +2,9 @@ import numpy as np
 import random
 
 AMPL_MODEL_CODE = r"""
+set I; # Centros de Distribución (CDs)
+set J; # Clientes
+
 param F{i in I}; #Costo fijo de abrir CD i
 param Cap{i in I}; #Capacidad máxima CD
 param d{j in J}; #Demanda promedio cliente j
