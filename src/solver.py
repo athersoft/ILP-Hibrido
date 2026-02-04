@@ -1,60 +1,42 @@
 import time
-import os
-import sys
 from amplpy import AMPL, ampl_notebook
 
-# --- CLASE PARA SILENCIAR SALIDA ---
-class Silence:
-    """Context Manager para silenciar stdout/stderr a nivel de OS."""
-    def __enter__(self):
-        self.fd_out = os.dup(1)
-        self.fd_err = os.dup(2)
-        self.devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(self.devnull, 1)
-        os.dup2(self.devnull, 2)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.dup2(self.fd_out, 1)
-        os.dup2(self.fd_err, 2)
-        os.close(self.devnull)
-        os.close(self.fd_out)
-        os.close(self.fd_err)
-
-# Variable global para el worker
+# Variable global para cada proceso
 workerAmpl = None
 
 def initWorker(modelFile, dataFile, licenseUuid, gurobiOptions):
-    """Inicializa la instancia de AMPL en un proceso paralelo."""
+    """Inicializa AMPL leyendo archivos físicos."""
     global workerAmpl
+    try:
+        # Intenta cargar licencia académica
+        workerAmpl = ampl_notebook(modules=["gurobi"], license_uuid=licenseUuid)
+    except:
+        # Fallback local (usará HiGHS si no encuentra Gurobi o falla licencia)
+        workerAmpl = AMPL()
     
-    # Usamos Silence durante la carga para evitar logs iniciales
-    with Silence():
-        try:
-            try:
-                workerAmpl = ampl_notebook(modules=["gurobi"], license_uuid=licenseUuid)
-            except:
-                workerAmpl = AMPL()
+    try:
+        workerAmpl.read(modelFile)
+        workerAmpl.readData(dataFile)
         
-            # Lectura de archivos físicos
-            workerAmpl.read(modelFile)
-            workerAmpl.readData(dataFile)
-            
-            # Opciones de silencio AMPL
-            workerAmpl.setOption("solver_msg", 0)
-            workerAmpl.setOption("show_stats", 0)
-            
-            # Configuración Solver
-            workerAmpl.setOption("solver", "gurobi")
-            
-            # Opciones de silencio Gurobi
-            cleanOpts = f"{gurobiOptions} outlev=0 timing=0 logfile=''"
-            workerAmpl.option["gurobi_options"] = cleanOpts
-            
-        except Exception:
-            workerAmpl = None
+        # 1. Silenciar mensaje de éxito ("Optimal solution...")
+        workerAmpl.setOption("solver_msg", 0)
+        
+        # Configuración del solver
+        workerAmpl.setOption("solver", "gurobi")
+        
+        # 2. Asegurar que Gurobi no imprima log de iteraciones
+        # Añadimos outlev=0 a las opciones que vienen de main
+        full_gurobi_opts = f"{gurobiOptions} outlev=0"
+        workerAmpl.option["gurobi_options"] = full_gurobi_opts
+        
+        workerAmpl.setOption("os_options", "outlev=0")
+        
+    except Exception as e:
+        print(f"FATAL ERROR en initWorker: {e}")
+        workerAmpl = None
 
 def solveWorker(chromosome):
-    """Evalúa un cromosoma."""
+    """Resuelve un individuo."""
     global workerAmpl
     
     if workerAmpl is None:
@@ -64,15 +46,12 @@ def solveWorker(chromosome):
         return float('inf'), 0.0
         
     try:
-        fixCmds = [f"fix Z[{i}] := {x};" for i, x in enumerate(chromosome)]
-        workerAmpl.eval("".join(fixCmds))
+        # Fijar variables Z
+        fixCommands = [f"fix Z[{i}] := {x};" for i, x in enumerate(chromosome)]
+        workerAmpl.eval("".join(fixCommands))
         
         t0 = time.time()
-        
-        # Silenciamos la ejecución del solve
-        with Silence():
-            workerAmpl.solve()
-            
+        workerAmpl.solve()
         t1 = time.time()
         
         solveResult = workerAmpl.getValue("solve_result")
@@ -84,5 +63,5 @@ def solveWorker(chromosome):
             
         return objValue, (t1 - t0)
         
-    except Exception:
+    except Exception as e:
         return float('inf'), 0.0

@@ -46,11 +46,12 @@ instancesDeepseek = [
 POP_SIZE = 30   #Tamaño de población    
 GENERATIONS = 100    #Número de generaciones
 N_CORES = 15       #Número de nucleos
+MUTATION = 0.15
 LICENSE_UUID = "f6447db7-92ab-4268-a78b-70bbb1406031" #Mi licencia de AMPL, no tocar
 
 if __name__ == "__main__":
 
-    DATA_URL = instancesChatGPT[4] #Acá se selecciona la instancia que se evaluará
+    DATA_URL = instancesChatGPT[0] #Acá se selecciona la instancia que se evaluará
 
     print("--- INICIANDO ALGORITMO GENÉTICO HÍBRIDO ---")
     
@@ -72,7 +73,8 @@ if __name__ == "__main__":
         popSize=POP_SIZE,
         generations=GENERATIONS,
         nJobs=N_CORES,
-        licenseUuid=LICENSE_UUID
+        licenseUuid=LICENSE_UUID,
+        mutationRate = MUTATION
     )
     
     endTime = time.time()
